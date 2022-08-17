@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include "JSL.h"
+#include "../libs/JSL/JSL.h"
 #include <ostream>
 #include "ale.h"
 class Synthesiser

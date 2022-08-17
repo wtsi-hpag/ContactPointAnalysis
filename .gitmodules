@@ -1,3 +1,6 @@
 [submodule "libs/HypothesisTester"]
 	path = libs/HypothesisTester
 	url = git@github.com:wtsi-hpag/HypothesisTester.git
+[submodule "libs/JSL"]
+	path = libs/JSL
+	url = git@github.com:JTFraser/JSL
