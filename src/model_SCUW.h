@@ -1,7 +1,7 @@
 #pragma once
 #include "JSL.h"
 #include "BreakPointData.h"
-#include "../../HypothesisTester/ModelTester.h"
+#include "../libs/HypothesisTester/HypothesisTester.h"
 #include "ale.h"
 
 class SCUW : public Hypothesis<BreakPointData>

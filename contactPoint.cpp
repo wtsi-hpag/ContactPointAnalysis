@@ -1,5 +1,5 @@
 // #define GNUPLOT_NO_TIDY
-#include "../HypothesisTester/ModelTester.h"
+#include "libs/HypothesisTester/HypothesisTester.h"
 
 #include "JSL.h"
 #include "src/model_UW.h"

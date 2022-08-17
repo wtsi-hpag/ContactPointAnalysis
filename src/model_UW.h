@@ -1,5 +1,5 @@
 #pragma once
-#include "../../HypothesisTester/Hypothesis.h"
+#include "../libs/HypothesisTester/HypothesisTester.h"
 #include "BreakPointData.h"
 
 class UW : public Hypothesis<BreakPointData>

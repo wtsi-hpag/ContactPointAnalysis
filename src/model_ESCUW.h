@@ -1,7 +1,7 @@
 #pragma once
 #include "JSL.h"
 #include "BreakPointData.h"
-#include "../../HypothesisTester/ModelTester.h"
+#include "../libs/HypothesisTester/HypothesisTester.h"
 
 double log_factorial(unsigned int n)
 {

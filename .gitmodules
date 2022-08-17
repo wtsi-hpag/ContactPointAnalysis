@@ -1,0 +1,3 @@
+[submodule "libs/HypothesisTester"]
+	path = libs/HypothesisTester
+	url = git@github.com:wtsi-hpag/HypothesisTester.git
