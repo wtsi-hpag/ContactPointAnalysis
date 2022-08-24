@@ -26,17 +26,18 @@ std::vector<BreakPointData> loadBreaks(std::string file,int coverageThreshold, i
 	return out;
 }
 
-void DetectionMode(std::string breakFile, std::string metaFile, int coverage, int singleChromosomeMode)
+void DetectionMode(std::string breakFile, std::string metaFile, int coverage, int singleChromosomeMode, int threads)
 {
 	int Nchroms = JSL::LineCount(metaFile)-1;
-
-	ModelTester<BreakPointData> mt;
+	ModelTester<BreakPointData> mt(threads);
+	mt.PrintMessages = true;
 	if (singleChromosomeMode > 0)
 	{
 		mt.AddHypothesis(UW(metaFile, singleChromosomeMode));
-		mt.AddHypothesis(MBUW(metaFile, 1, 2,singleChromosomeMode));
-		mt.AddHypothesis(MBUW(metaFile, 1, 5,singleChromosomeMode));
-		mt.AddHypothesis(MBUW(metaFile, 1, 10,singleChromosomeMode));
+		for (int i = 10; i < 120; i+= 20)
+		{
+			mt.AddHypothesis(MBUW(metaFile, 1, i,singleChromosomeMode));
+		}
 	}
 	else
 	{
@@ -45,8 +46,9 @@ void DetectionMode(std::string breakFile, std::string metaFile, int coverage, in
 		mt.AddHypothesis(SCUW(metaFile,Nchroms));
 		// mt.AddHypothesis(MBUW(metaFile, Nchroms, 1,singleChromosomeMode));
 		mt.AddHypothesis(MBUW(metaFile, Nchroms, 2,singleChromosomeMode));
+		mt.AddHypothesis(MBUW(metaFile, Nchroms, 3,singleChromosomeMode));
 		mt.AddHypothesis(MBUW(metaFile, Nchroms, 4,singleChromosomeMode));
-		mt.AddHypothesis(MBUW(metaFile, Nchroms, 6,singleChromosomeMode));
+		mt.AddHypothesis(MBUW(metaFile, Nchroms, 5,singleChromosomeMode));
 	}
 	auto breakData = loadBreaks(breakFile,coverage, singleChromosomeMode);
 	auto results =	mt.BeginTest(breakData,100000);
@@ -207,6 +209,7 @@ int main(int argc, char ** argv)
 	JSL::Argument<int> SingleChromosomeMode(-1,"scm",argc,argv);
 	JSL::Argument<double> sigmaMove(-999,"sigma",argc,argv);
 	JSL::Argument<int> CoverageThreshold(2,"coverage",argc,argv);
+	JSL::Argument<int> threads(1,"thread",argc,argv);
 	if (synthesisMode)
 	{
 		std::cout << "SYNTHESISING!" << std::endl;
@@ -214,7 +217,7 @@ int main(int argc, char ** argv)
 	}
 	else
 	{
-		DetectionMode(breakFile,metaFile,CoverageThreshold,SingleChromosomeMode);
+		DetectionMode(breakFile,metaFile,CoverageThreshold,SingleChromosomeMode,threads);
 		// GridMode(breakFile,metaFile);
 	}
 	return 0;
