@@ -5,6 +5,7 @@
 #include "src/model_UW.h"
 #include "src/model_ESCUW.h"
 #include "src/model_SCUW.h"
+#include "src/model_MBUW.h"
 #include "src/synthesiser.h"
 std::vector<BreakPointData> loadBreaks(std::string file,int coverageThreshold, int scm)
 {
@@ -33,13 +34,19 @@ void DetectionMode(std::string breakFile, std::string metaFile, int coverage, in
 	if (singleChromosomeMode > 0)
 	{
 		mt.AddHypothesis(UW(metaFile, singleChromosomeMode));
-		mt.AddHypothesis(UW(metaFile, singleChromosomeMode));
+		mt.AddHypothesis(MBUW(metaFile, 1, 2,singleChromosomeMode));
+		mt.AddHypothesis(MBUW(metaFile, 1, 5,singleChromosomeMode));
+		mt.AddHypothesis(MBUW(metaFile, 1, 10,singleChromosomeMode));
 	}
 	else
 	{
 		mt.AddHypothesis(UW(metaFile));
 		mt.AddHypothesis(ESCUW(metaFile));
 		mt.AddHypothesis(SCUW(metaFile,Nchroms));
+		// mt.AddHypothesis(MBUW(metaFile, Nchroms, 1,singleChromosomeMode));
+		mt.AddHypothesis(MBUW(metaFile, Nchroms, 2,singleChromosomeMode));
+		mt.AddHypothesis(MBUW(metaFile, Nchroms, 4,singleChromosomeMode));
+		mt.AddHypothesis(MBUW(metaFile, Nchroms, 6,singleChromosomeMode));
 	}
 	auto breakData = loadBreaks(breakFile,coverage, singleChromosomeMode);
 	auto results =	mt.BeginTest(breakData,100000);
