@@ -198,7 +198,6 @@ class SCUW : public Hypothesis<BreakPointData>
 
 				}
 			}
-			std::cout << "\t" <<N<<"-dimensional Hessian computed" << std::endl;
 			return H;
 		}
 

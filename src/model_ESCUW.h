@@ -44,7 +44,6 @@ class ESCUW : public Hypothesis<BreakPointData>
 
 		void LogProbabilityGradient(std::vector<double> & g, const std::vector<BreakPointData> & Data, std::vector<double> & params)
 		{
-			// std::cout<< "log prob" << std::endl;
 			double logpMove = params[0];
 			double pMove = exp(logpMove);
 			double pStick = 1.0 - pMove;
@@ -59,7 +58,6 @@ class ESCUW : public Hypothesis<BreakPointData>
 			double pStick = 1.0 - pMove;
 			double term = pMove/pow(pStick,2);
 			H(0,0) = -nStick * term;
-			// std::cout << "\tpMove " << pMove << "   " << H.Display() << "  DET =  " << H.log_LU_Determinant() << std::endl;
 			return H;
 		}
 
@@ -124,6 +122,5 @@ class ESCUW : public Hypothesis<BreakPointData>
 				
 			}
 
-			std::cout << "\tPrecomputing, found " << nMove << "  " << nStick << "  " << LogChromSum << std::endl;
 		}
 };
