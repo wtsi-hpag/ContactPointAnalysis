@@ -6,32 +6,43 @@
 #include "src/model_ESCUW.h"
 #include "src/model_SCUW.h"
 #include "src/synthesiser.h"
-std::vector<BreakPointData> loadBreaks(std::string file,int coverageThreshold)
+std::vector<BreakPointData> loadBreaks(std::string file,int coverageThreshold, int scm)
 {
 	std::vector<BreakPointData> out;
 
 	forLineVectorIn(file,' ',
 		BreakPointData breaker(FILE_LINE_VECTOR);
 
-		if (breaker.Coverage > coverageThreshold)
+		if (scm <= 0 || (breaker.JoinChromosome == scm && breaker.BreakChromosome == scm))
 		{
-			out.push_back(breaker);
+			if (breaker.Coverage > coverageThreshold)
+			{
+				out.push_back(breaker);
+			}
+			// std::cout<< breaker.JoinChromosome <<"  " << breaker.BreakChromosome << std::endl;
 		}
 	)
 	return out;
 }
 
-void DetectionMode(std::string breakFile, std::string metaFile, int coverage)
+void DetectionMode(std::string breakFile, std::string metaFile, int coverage, int singleChromosomeMode)
 {
 	int Nchroms = JSL::LineCount(metaFile)-1;
 
 	ModelTester<BreakPointData> mt;
-	mt.AddHypothesis(UW(metaFile));
-	mt.AddHypothesis(ESCUW(metaFile));
-	mt.AddHypothesis(SCUW(metaFile,Nchroms));
-
-	auto breakData = loadBreaks(breakFile,coverage);
-	auto results =	mt.BeginTest(breakData,1000);
+	if (singleChromosomeMode > 0)
+	{
+		mt.AddHypothesis(UW(metaFile, singleChromosomeMode));
+		mt.AddHypothesis(UW(metaFile, singleChromosomeMode));
+	}
+	else
+	{
+		mt.AddHypothesis(UW(metaFile));
+		mt.AddHypothesis(ESCUW(metaFile));
+		mt.AddHypothesis(SCUW(metaFile,Nchroms));
+	}
+	auto breakData = loadBreaks(breakFile,coverage, singleChromosomeMode);
+	auto results =	mt.BeginTest(breakData,100000);
 
 	std::cout << "Best Fitting Model is: " << results.BestModel << std::endl;
 
@@ -186,6 +197,7 @@ int main(int argc, char ** argv)
 	JSL::Argument<int> nSynthChromosomes(5,"n",argc,argv);
 	JSL::Argument<int> synthType(0,"t",argc,argv);
 	JSL::Argument<int> nSynth(1000,"ng",argc,argv);
+	JSL::Argument<int> SingleChromosomeMode(-1,"scm",argc,argv);
 	JSL::Argument<double> sigmaMove(-999,"sigma",argc,argv);
 	JSL::Argument<int> CoverageThreshold(2,"coverage",argc,argv);
 	if (synthesisMode)
@@ -195,7 +207,7 @@ int main(int argc, char ** argv)
 	}
 	else
 	{
-		DetectionMode(breakFile,metaFile,CoverageThreshold);
+		DetectionMode(breakFile,metaFile,CoverageThreshold,SingleChromosomeMode);
 		// GridMode(breakFile,metaFile);
 	}
 	return 0;
