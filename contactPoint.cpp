@@ -7,10 +7,11 @@
 #include "src/model_SCUW.h"
 #include "src/model_MBUW.h"
 #include "src/synthesiser.h"
+
 std::vector<BreakPointData> loadBreaks(std::string file,int coverageThreshold, int scm)
 {
 	std::vector<BreakPointData> out;
-
+	int lowestSep = -1;
 	forLineVectorIn(file,' ',
 		BreakPointData breaker(FILE_LINE_VECTOR);
 
@@ -19,10 +20,18 @@ std::vector<BreakPointData> loadBreaks(std::string file,int coverageThreshold, i
 			if (breaker.Coverage > coverageThreshold)
 			{
 				out.push_back(breaker);
+				bool same = breaker.JoinChromosome == breaker.BreakChromosome;
+				long long int sep = abs(breaker.JoinIdx - breaker.BreakIdx); 
+				if (lowestSep == -1 || (same && sep < lowestSep))
+				{
+					lowestSep = sep;
+					std::cout << "New smallest sep " << breaker.JoinIdx << "  " << breaker.BreakIdx << std::endl;
+				}
 			}
 			// std::cout<< breaker.JoinChromosome <<"  " << breaker.BreakChromosome << std::endl;
 		}
 	)
+	std::cout <<"The smallest separation I found was " << lowestSep << std::endl;
 	return out;
 }
 
@@ -194,6 +203,102 @@ void GridMode(std::string breakFile, std::string metaFile)
 	
 }
 
+inline double erfDist(double x,double x0, double ell)
+{
+	return (x - x0)/(sqrt(2)*ell);
+}
+
+void PrepareHiC()
+{
+	std::string hiCFile = "Data/chr6.sort-117";
+	std::vector<long long int> ChromLengths;
+	std::string chFile = "Data/chromLengths.dat";
+	forLineVectorIn(chFile,' ',
+		int length = std::stoi(FILE_LINE_VECTOR[1]);
+		ChromLengths.push_back(length);
+		// GenomeLength += length;
+	);
+	int nbins = 1000;
+
+	std::vector<int> x = JSL::Vector::linspace(0,ChromLengths[5],nbins);
+	auto y = x;
+	double DX = x[1] - x[0];
+	std::cout<< "Bin size = " << (x[1] - x[0])/1e6 << "Mb"<< std::endl;
+	std::vector<std::vector<double>> grid(nbins,std::vector<double>(nbins,0.0));
+
+	double ell = 5e5;//DX*2;
+	// int lM = 1000000;
+	int l = 0;
+	double pre = log(1.0/sqrt(2*M_PI*ell*ell));
+	int expected = JSL::LineCount(hiCFile);
+	JSL::ProgressBar pb(expected);
+
+	int influencedSquares = std::max(ell/(DX)*5,1.0);
+	std::cout << "Correlation Distance: " << ell << std::endl;
+	std::cout << "Influencing " << influencedSquares << " squares " << std::endl;
+
+	forLineVectorIn(hiCFile,' ',
+	// std::cout << l << std::endl;
+		int i = std::stoi(FILE_LINE_VECTOR[1]);
+		int j = std::stoi(FILE_LINE_VECTOR[2]);
+
+		if (abs(i - j) > 3.5e5)
+		{
+			int iBin = (double)i/ChromLengths[5] * nbins;
+			int jBin = (double)j/ChromLengths[5] * nbins;
+			// ++grid[iBin][jBin];
+			// std::cout << "Join at " << i << "  " << j << " assigned bins " << iBin << "  " << jBin << std::endl;
+			for (int q = std::max(0,iBin-influencedSquares); q < std::min(nbins,iBin + influencedSquares); ++q)
+			{
+				for (int p = std::max(0,jBin-influencedSquares); p< std::min(nbins,jBin + influencedSquares); ++p)
+				{
+					double dx = ((double)(x[p] - j))/ell;
+					double dy = ((double)(y[q]- i))/ell;
+					double rSq= dx*dx + dy*dy;
+					// double accept = std::max(DX*2/ell,5.0);
+					// std::cout << dx << "  " << dy << std::endl;
+					// 
+					// if (rSq < accept*accep÷
+						// double v2 =  0.5*exp(2*pre -0.5*(dx*dx + dy*dy));
+						
+						double v = 1.0/(8*DX*DX)* (erf( erfDist(x[p]+DX,j,ell)) - erf(erfDist(x[p],j,ell))) * (erf( erfDist(x[q]+DX,i,ell)) - erf(erfDist(x[q],i,ell)));
+						grid[q][p] += v;
+						grid[p][q] += v;
+						// std::cout << "\tAt pos " << x[p] << "  " << x[q] << " I estimate the value as " << DX*DX*v << std::endl;
+						// std::cout << "Adding to " << p << "  " << q << "  " << i << "  " << j << std::endl;
+					// }
+				}
+			}
+		}
+		pb.Update(l);
+		++l;
+		// if (l>=lM)
+		// {
+		// 	break;
+		// }
+	);
+
+	double S = 0;
+	for (int i = 0; i < nbins; ++i)
+	{
+		for (int j = 0; j < nbins; ++j)
+		{
+			S += DX*DX*grid[i][j];
+		}
+	}
+	for (int i = 0; i < nbins; ++i)
+	{
+		for (int j = 0; j < nbins; ++j)
+		{
+			grid[i][j]/=S;
+		}
+	}
+	std::cout << "Grid Norm: " << S << "  expected " << l << "  err = " << (S-l)/l << std::endl;
+	JSL::initialiseFile("hic_map.dat");
+	JSL::writeMatrixToFile("hic_map.dat",grid," ","\n");
+}
+
+
 int main(int argc, char ** argv)
 {
 	JSL::Argument<int> seed(time(NULL),"s",argc,argv);
@@ -210,6 +315,8 @@ int main(int argc, char ** argv)
 	JSL::Argument<double> sigmaMove(-999,"sigma",argc,argv);
 	JSL::Argument<int> CoverageThreshold(2,"coverage",argc,argv);
 	JSL::Argument<int> threads(1,"thread",argc,argv);
+
+	loadBreaks(breakFile,10,SingleChromosomeMode);
 	if (synthesisMode)
 	{
 		std::cout << "SYNTHESISING!" << std::endl;
@@ -217,8 +324,9 @@ int main(int argc, char ** argv)
 	}
 	else
 	{
-		DetectionMode(breakFile,metaFile,CoverageThreshold,SingleChromosomeMode,threads);
+		// DetectionMode(breakFile,metaFile,CoverageThreshold,SingleChromosomeMode,threads);
 		// GridMode(breakFile,metaFile);
+		PrepareHiC();
 	}
 	return 0;
 }
