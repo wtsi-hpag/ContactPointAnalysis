@@ -20,12 +20,12 @@ class MBUW : public Hypothesis<BreakPointData>
 			GridWidth = Nx;
 			// std::cout << Nx * (Nx+1)/2 -1 << std::endl;
 			ComputeBlockSizes();
-			std::vector<double> probLower(Nx*(Nx+1)/2-1,0);
-			std::vector<double> probUpper(Nx*(Nx+1)/2-1,1);
+			std::vector<double> probLower(Nx*(Nx+1)/2-1,-10);
+			std::vector<double> probUpper(Nx*(Nx+1)/2-1,10);
 			SetLowerBound(probLower);
 			SetUpperBound(probUpper);
 			
-			this->Identifier = "MBUW_" + std::to_string(blocksPerChrom);
+			this->Identifier = "MBUW_{" + std::to_string(blocksPerChrom) + "}";
 		}
 		
 		double ComputeLogNormalisation(const std::vector<double> & params)

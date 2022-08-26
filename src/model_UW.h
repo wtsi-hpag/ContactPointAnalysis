@@ -37,5 +37,6 @@ class UW : public Hypothesis<BreakPointData>
 				}
 				++i;
 			);
+			std::cout << "Extracted Length = " << GenomeLength << std::endl;
 		}
 };

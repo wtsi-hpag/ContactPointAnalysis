@@ -44,15 +44,17 @@ void DetectionMode(std::string breakFile, std::string metaFile, int coverage, in
 	if (singleChromosomeMode > 0)
 	{
 		mt.AddHypothesis(UW(metaFile, singleChromosomeMode));
-		for (int i = 2; i < 10; i+= 1)
+		for (int i = 5; i <= 50; i+= 1)
 		{
 			mt.AddHypothesis(MBUW(metaFile, 1, i,singleChromosomeMode));
 		}
 		std::string data = "Data/HiC_Test/";
-		// mt.AddHypothesis(SAW(1e3,metaFile,data,singleChromosomeMode));
+		// mt.AddHypothesis(SAW(1e4,metaFile,data,singleChromosomeMode));
 		// mt.AddHypothesis(SAW(1e5,metaFile,data,singleChromosomeMode));
+		// mt.AddHypothesis(SAW(1e6,metaFile,data,singleChromosomeMode));
+		// mt.AddHypothesis(SAW(1e7,metaFile,data,singleChromosomeMode));
 		// mt.AddHypothesis(SAW(1e8,metaFile,data,singleChromosomeMode));
-		// mt.AddHypothesis(SAW(1e10,metaFile,data,singleChromosomeMode));
+		// mt.AddHypothesis(SAW(1e9,metaFile,data,singleChromosomeMode));
 		// mt.AddHypothesis(SAW(1e30,metaFile,data,singleChromosomeMode));
 	}
 	else
@@ -79,7 +81,7 @@ void DetectionMode(std::string breakFile, std::string metaFile, int coverage, in
 	for (int i = 0; i < score.size(); ++i)
 	{
 		double logDiff = score[i];
-		scoreDiffs[i] = abs(logDiff/log(10)-1);
+		scoreDiffs[i] = (abs(logDiff/log(10)-1));
 		if (scoreDiffs[i] > min)
 		{
 			min = abs(scoreDiffs[i]);
@@ -87,9 +89,14 @@ void DetectionMode(std::string breakFile, std::string metaFile, int coverage, in
 	}
 
 	JSL::gnuplot gp;
+	namespace lp = JSL::LineProperties;
+	gp.WindowSize(1300,500);
 	gp.Chart(results.Models,scoreDiffs);
+	std::vector<double> span = {0.5,(double)scoreDiffs.size()+0.5};
+	std::vector<double> uwHeight = {scoreDiffs[0],scoreDiffs[0]};
+	gp.Plot(span,uwHeight,lp::PenType(JSL::Dash),lp::Colour("black"),lp::PenSize(2));
 	gp.SetYLog(true);
-	gp.SetYRange(0.2,min);
+	gp.SetYRange(0.95,min*1.02);
 	gp.SetXLabel("Model");
 	gp.SetYLabel("\\log_{10} Odds-Ratio Relative to Worst Model");
 	gp.SetGrid(true);
