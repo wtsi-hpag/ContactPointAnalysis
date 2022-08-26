@@ -2,6 +2,7 @@
 #include "BreakPointData.h"
 #include "../libs/HypothesisTester/HypothesisTester.h"
 #include "ale.h"
+#include "../libs/JSL/JSL.h"
 
 class MBUW : public Hypothesis<BreakPointData>
 {
@@ -9,7 +10,7 @@ class MBUW : public Hypothesis<BreakPointData>
 		MBUW(std::string metaData, int nChroms, int blocksPerChrom, int singleTargetChrom) : Hypothesis<BreakPointData>((nChroms*blocksPerChrom*(nChroms*blocksPerChrom+1))/2-1,GAI)
 		{
 			TargetChrom = singleTargetChrom;
-			std::cout << "MBUW initialised with target" << singleTargetChrom << std::endl;
+			// std::cout << "MBUW initialised with target" << singleTargetChrom << std::endl;
 			//compute genome length
 			ExtractChromosomeLengths(metaData);
 			
@@ -17,9 +18,10 @@ class MBUW : public Hypothesis<BreakPointData>
 			int N = nChroms;
 			int Nx = nChroms * blocksPerChrom;
 			GridWidth = Nx;
+			// std::cout << Nx * (Nx+1)/2 -1 << std::endl;
 			ComputeBlockSizes();
-			std::vector<double> probLower(Nx*(Nx+1)/2-1,-10);
-			std::vector<double> probUpper(Nx*(Nx+1)/2-1,10);
+			std::vector<double> probLower(Nx*(Nx+1)/2-1,0);
+			std::vector<double> probUpper(Nx*(Nx+1)/2-1,1);
 			SetLowerBound(probLower);
 			SetUpperBound(probUpper);
 			
@@ -129,7 +131,6 @@ class MBUW : public Hypothesis<BreakPointData>
 		squareMatrix ProbabilityHessian(const std::vector<BreakPointData> & Data, std::vector<double> & params)
 		{
 			int N = this->Dimension;
-			// std::cout << "Computing " <<N <<"-d Hessian" << std::endl;
 			std::vector<int> pMap(N,0);
 			std::vector<int> qMap(N,0);
 			std::vector<double> logrs(N,0);
@@ -142,7 +143,7 @@ class MBUW : public Hypothesis<BreakPointData>
 				for (int j = i; j < nBlocks; ++j)
 				{
 					bool isAnchor = (i==anchor_y && j == anchor_x);
-					if (!isAnchor)
+					if (!isAnchor && DataBin(i,j)>0)
 					{
 						pMap[c] = i;
 						qMap[c] = j;
@@ -155,14 +156,17 @@ class MBUW : public Hypothesis<BreakPointData>
 					}
 				}
 			}
-			squareMatrix H(N);
+			squareMatrix H(c);
+
+			
 			double log_nAnchor = log(DataBin(anchor_y,anchor_x));
-			for (int q = 0; q < N; ++q)
+			for (int q = 0; q < c; ++q)
 			{
-				for (int p = q; p < N; ++p)
+				for (int p = q; p < c; ++p)
 				{
-					double t1 = std::max(1.0/nData,DataBin(pMap[q],qMap[q]));
-					double t2 = std::max(1e-5,(double)DataBin(pMap[p],qMap[p])/nData);
+					double t1 = DataBin(pMap[q],qMap[q]);
+					double t2 = (double)DataBin(pMap[p],qMap[p])/nData;
+
 					if (p == q)
 					{
 						t2 -=1;
@@ -173,7 +177,6 @@ class MBUW : public Hypothesis<BreakPointData>
 
 				}
 			}
-			// std::cout << "Computed " <<N <<"-d Hessian" << std::endl;
 			return H;
 		}
 
@@ -200,15 +203,22 @@ class MBUW : public Hypothesis<BreakPointData>
 		void ComputeBlockSizes()
 		{
 			int nChroms = ChromLengths.size();
+			std::vector<int> chromIdx;
 			if (TargetChrom >0)
 			{
 				nChroms = 1;
+				chromIdx = {TargetChrom-1};
+			}
+			else
+			{
+				chromIdx.resize(nChroms);
+				std::iota(chromIdx.begin(),chromIdx.end(),0);
 			}
 			BlockSizes.resize(GridWidth);
 			int c = 0;
-			for (int n = 0; n <nChroms; ++n)
+			for (auto chrom : chromIdx)
 			{
-				int block = ChromLengths[n]/BlocksPerChrom;
+				int block = ChromLengths[chrom]/BlocksPerChrom;
 				for (int j = 0; j < BlocksPerChrom; ++j)
 				{
 					if (j <BlocksPerChrom-1)
@@ -217,7 +227,7 @@ class MBUW : public Hypothesis<BreakPointData>
 					}
 					else
 					{
-						BlockSizes[c] = ChromLengths[n] - j*block;
+						BlockSizes[c] = ChromLengths[chrom] - j*block;
 					}
 					++c;
 					// std::cout << n << "  " << block << "  " << c << "  " << GridWidth << "  " << TargetChrom << std::endl;
@@ -266,6 +276,10 @@ class MBUW : public Hypothesis<BreakPointData>
 					anchor_y = std::min(xBin,yBin);
 				}
 			}
+			// if (this->Dimension == 0)
+			// {
+			// 	std::cout << Data
+			// }
 			
 			// std::cout << DataBin.Display() << std::endl;
 		}

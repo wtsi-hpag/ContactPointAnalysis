@@ -6,6 +6,7 @@
 #include "src/model_ESCUW.h"
 #include "src/model_SCUW.h"
 #include "src/model_MBUW.h"
+#include "src/model_SAW.h"
 #include "src/synthesiser.h"
 
 std::vector<BreakPointData> loadBreaks(std::string file,int coverageThreshold, int scm)
@@ -25,13 +26,13 @@ std::vector<BreakPointData> loadBreaks(std::string file,int coverageThreshold, i
 				if (lowestSep == -1 || (same && sep < lowestSep))
 				{
 					lowestSep = sep;
-					std::cout << "New smallest sep " << breaker.JoinIdx << "  " << breaker.BreakIdx << std::endl;
+					// std::cout << "New smallest sep " << breaker.JoinIdx << "  " << breaker.BreakIdx << std::endl;
 				}
 			}
 			// std::cout<< breaker.JoinChromosome <<"  " << breaker.BreakChromosome << std::endl;
 		}
 	)
-	std::cout <<"The smallest separation I found was " << lowestSep << std::endl;
+	// std::cout <<"The smallest separation I found was " << lowestSep << std::endl;
 	return out;
 }
 
@@ -39,14 +40,20 @@ void DetectionMode(std::string breakFile, std::string metaFile, int coverage, in
 {
 	int Nchroms = JSL::LineCount(metaFile)-1;
 	ModelTester<BreakPointData> mt(threads);
-	mt.PrintMessages = true;
+	mt.Verbosity = 2;
 	if (singleChromosomeMode > 0)
 	{
 		mt.AddHypothesis(UW(metaFile, singleChromosomeMode));
-		for (int i = 10; i < 120; i+= 20)
+		for (int i = 2; i < 10; i+= 1)
 		{
 			mt.AddHypothesis(MBUW(metaFile, 1, i,singleChromosomeMode));
 		}
+		std::string data = "Data/HiC_Test/";
+		// mt.AddHypothesis(SAW(1e3,metaFile,data,singleChromosomeMode));
+		// mt.AddHypothesis(SAW(1e5,metaFile,data,singleChromosomeMode));
+		// mt.AddHypothesis(SAW(1e8,metaFile,data,singleChromosomeMode));
+		// mt.AddHypothesis(SAW(1e10,metaFile,data,singleChromosomeMode));
+		// mt.AddHypothesis(SAW(1e30,metaFile,data,singleChromosomeMode));
 	}
 	else
 	{
@@ -218,7 +225,7 @@ void PrepareHiC()
 		ChromLengths.push_back(length);
 		// GenomeLength += length;
 	);
-	int nbins = 1000;
+	int nbins = 10000;
 
 	std::vector<int> x = JSL::Vector::linspace(0,ChromLengths[5],nbins);
 	auto y = x;
@@ -226,7 +233,7 @@ void PrepareHiC()
 	std::cout<< "Bin size = " << (x[1] - x[0])/1e6 << "Mb"<< std::endl;
 	std::vector<std::vector<double>> grid(nbins,std::vector<double>(nbins,0.0));
 
-	double ell = 5e5;//DX*2;
+	double ell = 2e4;//DX*2;
 	// int lM = 1000000;
 	int l = 0;
 	double pre = log(1.0/sqrt(2*M_PI*ell*ell));
@@ -324,9 +331,9 @@ int main(int argc, char ** argv)
 	}
 	else
 	{
-		// DetectionMode(breakFile,metaFile,CoverageThreshold,SingleChromosomeMode,threads);
+		DetectionMode(breakFile,metaFile,CoverageThreshold,SingleChromosomeMode,threads);
 		// GridMode(breakFile,metaFile);
-		PrepareHiC();
+		// PrepareHiC();
 	}
 	return 0;
 }
